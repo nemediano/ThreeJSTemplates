@@ -100,6 +100,14 @@ function init() {
   gui.add(controls, 'arrowHeightScale', 0.1, 10.0);
   gui.add(controls, 'arrowWidthScale', 0.1, 10.0);
 
+  // position and point the camera to the center of the scene
+  const RADIUS_MAX =  30;
+  let camPos = new THREE.Vector3(-0.5, 0.6, 1);
+  camPos.normalize();
+  camPos.multiplyScalar(RADIUS_MAX);
+  camera.position.set(camPos.x, camPos.y, camPos.z);
+  camera.lookAt(scene.position);
+
   // Add OrbitControls so that we can pan around with the mouse.
   orbitCtrl = new THREE.OrbitControls(camera, renderer.domElement);
 
@@ -112,49 +120,15 @@ function init() {
   // rotate and position the plane
   plane.rotation.x = -0.5 * Math.PI;
   plane.position.x = 10;
-  plane.position.y = -3;
+  plane.position.y = 0;
   plane.position.z = 0;
-
   // add the plane to the scene
   scene.add(plane);
 
-  // Multimateral is needed to correct wireframe
-  const arrowMaterials = [
-      new THREE.MeshLambertMaterial({ color: 0x00ff00 }),
-      new THREE.MeshBasicMaterial({ color: 0x000000, wireframe: true })
-  ];
-
-  let arrow;
-
-  function addArrow(slices, pntHghtPrp, pntRdPrp, widthScl, hghtScl) {
-    // create an arrow geometry
-    let arrowGeometry = createArrowGeometry(slices, pntHghtPrp, pntRdPrp);
-    arrow = new THREE.SceneUtils.createMultiMaterialObject(arrowGeometry, arrowMaterials);
-    // Since it is a multimaterial object we need to do this to add shadow
-    arrow.traverse(function (e) {
-      e.castShadow = true
-    });
-    // Scale arrow
-    arrow.scale.x = widthScl;
-    arrow.scale.y = hghtScl;
-    arrow.scale.z = widthScl;
-    // Make arrow stand on top of the plane
-    arrow.position.y = hghtScl - 3;
-
-    // add the arrow to the scene
-    scene.add(arrow);
-  }
-
-  addArrow(controls.arrowSlices, controls.pointHeightProportion, controls.pointRadiProportion,
-      controls.arrowWidthScale, controls.arrowHeightScale);
-
-  // position and point the camera to the center of the scene
-  const RADIUS_MAX =  30;
-  let camPos = new THREE.Vector3(-0.5, 0.6, 1);
-  camPos.normalize();
-  camPos.multiplyScalar(RADIUS_MAX);
-  camera.position.set(camPos.x, camPos.y, camPos.z);
-  camera.lookAt(scene.position);
+  // create and add marker to the scene
+  const marker = createMarker();
+  marker.position.y = 1.8;
+  scene.add(marker);
 
   // add subtle ambient lighting
   const ambienLight = new THREE.AmbientLight(0x353535);
@@ -176,11 +150,6 @@ function init() {
     orbitCtrl.update();
     stats.update();
 
-    // update the arrow
-    scene.remove(arrow);
-    addArrow(controls.arrowSlices, controls.pointHeightProportion, controls.pointRadiProportion,
-      controls.arrowWidthScale, controls.arrowHeightScale);
-
     // render using requestAnimationFrame
     requestAnimationFrame(render);
     renderer.render(scene, camera);
@@ -190,6 +159,62 @@ function init() {
     camera.aspect = window.innerWidth / window.innerHeight;
     camera.updateProjectionMatrix();
     renderer.setSize(window.innerWidth, window.innerHeight);
+  }
+
+  function createMarker() {
+    const materials = [
+      new THREE.MeshLambertMaterial({ color: 0xff0000 }), // x axis material
+      new THREE.MeshLambertMaterial({ color: 0x00ff00 }), // y axis material
+      new THREE.MeshLambertMaterial({ color: 0x0000ff }), // z axis material
+      new THREE.MeshLambertMaterial({ color: 0x888888 })  // center cube material
+    ];
+    // Create arrow geometry (Thos values shape the arrow and were calculated with the other app)
+    const arrowGeometry = createArrowGeometry(20, 0.85, 0.4);
+    const scaleHeight = 1.8;
+    const scaleWidth  = 0.2;
+    // This shif the arrow center for the marker
+    const shift = 0.1;
+    // create X axis
+    const xAxis = new THREE.Mesh(arrowGeometry, materials[0]);
+    // Scale
+    xAxis.scale.set(scaleWidth, scaleHeight, scaleWidth);
+    // Rotate
+    xAxis.rotation.z = 1.5 * Math.PI;
+    // Shift
+    xAxis.position.x = shift;
+    // cast shadow
+    xAxis.castShadow = true;
+    // create Y axis
+    const yAxis = new THREE.Mesh(arrowGeometry, materials[1]);
+    // Scale
+    yAxis.scale.set(scaleWidth, scaleHeight, scaleWidth);
+    // Shift
+    yAxis.position.y = shift;
+    // cast shadow
+    yAxis.castShadow = true;
+    // create Z axis
+    const zAxis = new THREE.Mesh(arrowGeometry, materials[2]);
+    // Scale
+    zAxis.scale.set(scaleWidth, scaleHeight, scaleWidth);
+    // Rotate
+    zAxis.rotation.x = 0.5 * Math.PI;
+    // Shift
+    zAxis.position.z = shift;
+    // cast shadow
+    zAxis.castShadow = true;
+    // Create cube
+    const cubeGeometry = new THREE.BoxGeometry(scaleWidth, scaleWidth, scaleWidth);
+    const cube = new THREE.Mesh(cubeGeometry, materials[3]);
+    // cast shadow
+    cube.castShadow = true;
+    //create a group that will become the marker
+    let marker = new THREE.Group();
+    marker.add(xAxis);
+    marker.add(yAxis);
+    marker.add(zAxis);
+    marker.add(cube);
+
+    return marker;
   }
 }
 init();
