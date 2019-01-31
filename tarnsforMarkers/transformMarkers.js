@@ -126,7 +126,7 @@ function init() {
 
     // we need to store a reference to the objects since we are going to query later
     let meshes = marker.children;
-    for (let i = 0; i < meshes.lenght; ++i) {
+    for (let i = 0; i < meshes.length; ++i) {
       octree.add(meshes[i]);
     }
     scene.add(marker);
@@ -188,9 +188,9 @@ function pickingLogic() {
   if (intersections.length > 0) {
     console.log('Hit!');
     // is a new selection?
-    if (intersections[0].object != selectedObject) {
+    if (intersections[0].object.parent != selectedObject) {
       console.log('New selection!');
-      selectLogic(intersections[0].object);
+      selectLogic(intersections[0].object.parent);
     }
   } else {
     unselect();
